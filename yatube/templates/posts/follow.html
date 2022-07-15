@@ -1,0 +1,12 @@
+<!-- templates/posts/index.html -->
+{% extends 'base.html' %}
+{% block title %}
+Посты избранных авторов
+{% endblock %}
+{% block content %}
+<div class="container py-5">     
+  {% include 'includes/switcher.html' %}
+  {% include 'posts/includes/view_posts.html'%}
+  {% include 'includes/paginator.html' %}
+</div>
+{% endblock %}
