@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import CommentForm, PostForm
-from .models import Group, Post, User, Follow
+from .models import Follow, Group, Post, User
 
 POST_ON_PAGE = 10
 
@@ -15,6 +15,7 @@ def index(request):
     page_obj = paginator.get_page(page_number)
     context = {
         'page_obj': page_obj,
+        'index': True
     }
     return render(request, 'posts/index.html', context)
 
@@ -101,7 +102,7 @@ def post_edit(request, post_id):
 
 @login_required
 def add_comment(request, post_id):
-    post = post = get_object_or_404(Post.objects.select_related(
+    post = get_object_or_404(Post.objects.select_related(
         'author',
         'group'),
         id=post_id
@@ -117,30 +118,34 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    # информация о текущем пользователе доступна в переменной request.user
     posts = Post.objects.filter(author__following__user=request.user)
     paginator = Paginator(posts, POST_ON_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    context = {"page_obj": page_obj}
+    context = {
+        'page_obj': page_obj,
+        'follow': True
+    }
     return render(request, 'posts/follow.html', context)
 
 
 @login_required
 def profile_follow(request, username):
-    # Подписаться на автора
+    """Подписаться на автора"""
     author = get_object_or_404(User, username=username)
     user = request.user
     follower = Follow.objects.filter(user=user, author=author)
     if user != author and not follower.exists():
         Follow.objects.create(user=user, author=author)
-    return redirect("posts:profile", username=username)
+    return redirect('posts:profile', username=username)
 
 
 @login_required
 def profile_unfollow(request, username):
-    # Дизлайк, отписка
-    user = request.user
-    follow = get_object_or_404(Follow, user=user, author__username=username)
-    follow.delete()
-    return redirect("posts:profile", username=username)
+    """Дизлайк, отписка"""
+    follow = Follow.objects.filter(
+        author__username=username,
+        user=request.user)
+    if follow.exists():
+        follow.delete()
+    return redirect('posts:profile', username=username)
